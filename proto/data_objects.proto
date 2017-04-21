@@ -88,7 +88,7 @@ message DataObject {
   # file_state
   # error_type
   # submitter_id
-  
+
 }
 
 ///-------------------------------------------------------------------
@@ -108,7 +108,7 @@ message Provenance {
 /// TODO ADD DESCRIPTION
 ///-------------------------------------------------------------------
 
-message ListRequest {
+message ListDataObjectsRequest {
   //OPTIONAL
   string name_prefix = 1;
 
@@ -118,9 +118,29 @@ message ListRequest {
   //OPTIONAL
   string dataset_id = 3;
 
-  //TODO Add page
+  //OPTIONAL
+  // Specifies the maximum number of results to return in a single page.
+  // If unspecified, a system default will be used.
+  int32 page_size = 4;
+
+  //OPTIONAL
+  // The continuation token, which is used to page through large result sets.
+  // To get the next page of results, set this parameter to the value of
+  // `next_page_token` from the previous response.
+  string page_token = 5;
 
 }
+
+message ListDataObjectsResponse {
+  // The list of datasets.
+  repeated Dataset datasets = 1;
+
+  // The continuation token, which is used to page through large result sets.
+  // Provide this value in a subsequent request to return the next page of
+  // results. This field will be empty if there aren't any additional results.
+  string next_page_token = 2;
+}
+
 ///-------------------------------------------------------------------
 /// TODO ADD DESCRIPTION
 ///-------------------------------------------------------------------
@@ -155,7 +175,7 @@ service DataService {
     };
   }
 
-  rpc ListDataObjects(ListRequest) returns (stream DataObject) {
+  rpc ListDataObjects(ListDataObjectsRequest) returns (ListDataObjectsResponse) {
     option (google.api.http) = {
       post: "/v1/data/object/search"
       body: "*"
@@ -164,7 +184,7 @@ service DataService {
 
 
 # we should be extending core ga4gh schema
-# TODO create a PR for ga4gh/metadata_service.proto
+# See PR https://github.com/ga4gh/ga4gh-schemas/pull/874
 #   https://github.com/ga4gh/ga4gh-schemas/blob/396784ab2f77b359b27c6ffb87604c146c668068/src/main/proto/ga4gh/metadata_service.proto#L14
 #     rpc AddDataSet(DataSet) returns (DataSetID) {
 #       option (google.api.http) = {
@@ -173,12 +193,15 @@ service DataService {
 #       };
 #     }
 
+
+# see https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata_service.proto
 #     rpc GetDataSet(DataSetID) returns (DataSet) {
 #       option (google.api.http) = {
 #         get: "/v1/data/set/{dataset}"
 #       };
 #     }
 
+# see https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata_service.proto
 # rpc ListDataSets(ListRequest) returns (stream DataSet) {
 #   option (google.api.http) = {
 #     post: "/v1/data/set/search"
