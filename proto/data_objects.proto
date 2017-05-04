@@ -7,67 +7,117 @@ package dos;
 // from github.com/googleapis/googleapis
 import "google/api/annotations.proto";
 
+
+///-------------------------------------------------------------------
+// Link: for HATEOAS links (Hypermedia As The Engine Of Application State)
+///-------------------------------------------------------------------
+message Link {
+  string rel = 1;   // Relationship between the document containing the link and the destination resource
+  oneof payload {
+    string url = 2;  // Address of the entity
+    string id = 3;   // Id of the entity
+  }
+  string mime_type = 4;  // Hint for the type of the referenced resource mimetype
+}
+
+
+///-------------------------------------------------------------------
+// Resource: a file, API or other resource
+///-------------------------------------------------------------------
 message DataObject {
   //REQUIRED
   string id = 1;
 
-  //OPTIONAL
-  string description = 2;
+  //REQUIRED
+  string file_name = 2;
 
   //REQUIRED
-  string checksum = 3;
+  int64 file_size = 3;
 
   //REQUIRED
-  int64 size = 4;
-
-  //OPTIONAL
-  repeated string aliases = 5;
-
-  //OPTIONAL
-  string mimeType = 6;
+  // The time at which this object was created in milliseconds from the
+  // epoch.
+  int64 created = 4; // timestamp
 
   //REQUIRED
-  repeated string urls = 7;
+  // The time at which this object was last updated in milliseconds from the
+  // epoch.
+  int64 updated = 5;
+
+  //OPTIONAL
+  string mime_type = 6;
+
+  //OPTIONAL
+  string md5sum =  7;
 
   //REQUIRED
-  string created = 8; // timestamp
+  repeated string urls = 8;
 
   //OPTIONAL
-  string dataset_id = 9;
+  string description = 9;
+
+  //OPTIONAL TODO ARE THESE NAMES, IDS, URLS?
+  repeated string aliases = 10;
 
   //OPTIONAL
-  map<string, string> info = 10;
+  Provenance provenance = 11;
 
   //OPTIONAL
-  Provenance provenance = 12;
+  map<string, google.protobuf.Struct> info = 12;
+
+  //OPTIONAL
+  // A Resource can optionally be associated with the following linked entities :
+  // relationship  example description
+  // aliquots         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/aliquot.yaml
+  // analytes         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/analyte.yaml
+  // archives         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/archive.yaml
+  // individual (case,donor)   https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/bio_metadata.proto#L11
+  // centers          https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/center.yaml
+  // data_formats     https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/data_format.yaml
+  // dataset          https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata.proto#L10
+  // derived_files    https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/file.yaml#L50
+  // platforms        https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/platform.yaml
+  // portions         https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/portion.yaml
+  // project          https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/project.yaml
+  // related_files    https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/file.yaml#L50
+  // biosample        https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/bio_metadata.proto#L65
+  // slides           https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/slide.yaml
+  // tags             https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/tag.yaml
+  // repository       http://docs.icgc.org/portal/api-endpoints/#!/repositories/list
+  repeated Link links = 13;
+
+  // OPTIONAL the id of the file as submitted
+  string submitted_id = 14;
+
+  //TODO DISCUSS OTHER GDC fields
+  # state
+  # file_state
+  # error_type
+  # submitter_id
+
 }
 
-
-message DataSet {
-  //REQUIRED
-  string id = 1;
-
-  //OPTIONAL
-  string description = 2;
-
-  //OPTIONAL
-  repeated string aliases = 3;
-
-  //OPTIONAL
-  map<string, string> info = 4;
-}
-
+///-------------------------------------------------------------------
+// A description of how the dataobject was created
+///-------------------------------------------------------------------
 
 message Provenance {
   //REQUIRED
-  repeated string sources = 1;
+  // A string defining an operation
+  string operation = 1;
 
-  //REQUIRED
-  string operation = 2;
+  //OPTIONAL
+  // An array of data_object_id inputs to a operation
+  // TODO append other ideas here e.g. data descriptor
+  repeated string sources = 2;
 }
 
 
-message ListRequest {
+///-------------------------------------------------------------------
+// A request to list all objects in a dataset
+///-------------------------------------------------------------------
+
+message ListDataObjectsRequest {
   //OPTIONAL
   string name_prefix = 1;
 
@@ -77,56 +127,107 @@ message ListRequest {
   //OPTIONAL
   string dataset_id = 3;
 
+  //OPTIONAL
+  // Specifies the maximum number of results to return in a single page.
+  // If unspecified, a system default will be used.
+  int32 page_size = 4;
+
+  //OPTIONAL
+  // The continuation token, which is used to page through large result sets.
+  // To get the next page of results, set this parameter to the value of
+  // `next_page_token` from the previous response.
+  string page_token = 5;
+
 }
 
-message DataObjectID {
-  string dataobject = 1;
+///-------------------------------------------------------------------
+// A list of data objects
+///-------------------------------------------------------------------
+
+message ListDataObjectsResponse {
+  // The list of datasets.
+  repeated DataObject dataobjects = 1;
+
+  // The continuation token, which is used to page through large result sets.
+  // Provide this value in a subsequent request to return the next page of
+  // results. This field will be empty if there aren't any additional results.
+  string next_page_token = 2;
 }
 
-message DataSetID {
-  string dataset = 1;
+///-------------------------------------------------------------------
+// The id of the data_object created
+///-------------------------------------------------------------------
+
+message AddDataObjectResponse {
+  string id = 1;
 }
+
+///-------------------------------------------------------------------
+// The id of the data_object requested
+///-------------------------------------------------------------------
+message GetDataObjectRequest {
+  string id = 1;
+}
+
+
+
+///-------------------------------------------------------------------
+// Add
+///-------------------------------------------------------------------
 
 service DataService {
 
-  rpc AddDataObject(DataObject) returns (DataObjectID) {
+  rpc AddDataObject(DataObject) returns (AddDataObjectResponse) {
     option (google.api.http) = {
       post: "/v1/data/object"
       body: "*"
     };
   }
 
-  rpc GetDataObject(DataObjectID) returns (DataObject) {
+  rpc GetDataObject(GetDataObjectRequest) returns (DataObject) {
     option (google.api.http) = {
-      get: "/v1/data/object/{dataobject}"
+      get: "/v1/data/object/{id}"
     };
   }
 
-  rpc AddDataSet(DataSet) returns (DataSetID) {
-    option (google.api.http) = {
-      post: "/v1/data/set"
-      body: "*"
-    };
-  }
-
-  rpc GetDataSet(DataSetID) returns (DataSet) {
-    option (google.api.http) = {
-      get: "/v1/data/set/{dataset}"
-    };
-  }
-
-  rpc ListDataObjects(ListRequest) returns (stream DataObject) {
+  rpc ListDataObjects(ListDataObjectsRequest) returns (ListDataObjectsResponse) {
     option (google.api.http) = {
       post: "/v1/data/object/search"
       body: "*"
     };
   }
 
-  rpc ListDataSets(ListRequest) returns (stream DataSet) {
-    option (google.api.http) = {
-      post: "/v1/data/set/search"
-      body: "*"
-    };
-  }
+
+
+# we should be extending core ga4gh schema
+# See PR https://github.com/ga4gh/ga4gh-schemas/pull/874
+
+#  message DataSetID {
+#    string dataset = 1;
+#  }
+#   https://github.com/ga4gh/ga4gh-schemas/blob/396784ab2f77b359b27c6ffb87604c146c668068/src/main/proto/ga4gh/metadata_service.proto#L14
+#     rpc AddDataSet(DataSet) returns (DataSetID) {
+#       option (google.api.http) = {
+#         post: "/v1/data/set"
+#         body: "*"
+#       };
+#     }
+
+
+# see https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata_service.proto
+#     rpc GetDataSet(DataSetID) returns (DataSet) {
+#       option (google.api.http) = {
+#         get: "/v1/data/set/{dataset}"
+#       };
+#     }
+
+# see https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata_service.proto
+# rpc ListDataSets(ListRequest) returns (stream DataSet) {
+#   option (google.api.http) = {
+#     post: "/v1/data/set/search"
+#     body: "*"
+#   };
+# }
+
 
 }
