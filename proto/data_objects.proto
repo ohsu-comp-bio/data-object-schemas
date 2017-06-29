@@ -2,131 +2,113 @@
 syntax = "proto3";
 
 package dos;
+import "google/protobuf/struct.proto";
 
 // Import HTTP RESTful annotations
 // from github.com/googleapis/googleapis
 import "google/api/annotations.proto";
 
+
+///-------------------------------------------------------------------
+// Link: for HATEOAS links (Hypermedia As The Engine Of Application State)
+///-------------------------------------------------------------------
+message Link {
+  string rel = 1;   // Relationship between the document containing the link and the destination resource
+  oneof payload {
+    string url = 2;  // Address of the entity
+    string id = 3;   // Id of the entity
+  }
+  string mime_type = 4;  // Hint for the type of the referenced resource mimetype
+}
+
+
+///-------------------------------------------------------------------
+// Resource: a file, API or other resource
+///-------------------------------------------------------------------
 message DataObject {
   //REQUIRED
   string id = 1;
 
-  //OPTIONAL
-  string description = 2;
+  //REQUIRED
+  string file_name = 2;
 
   //REQUIRED
-  string checksum = 3;
+  int64 file_size = 3;
 
   //REQUIRED
-  int64 size = 4;
-
-  //OPTIONAL
-  repeated string aliases = 5;
-
-  //OPTIONAL
-  string mimeType = 6;
+  // The time at which this object was created in milliseconds from the
+  // epoch.
+  int64 created = 4; // timestamp
 
   //REQUIRED
-  repeated string urls = 7;
+  // The time at which this object was last updated in milliseconds from the
+  // epoch.
+  int64 updated = 5;
+
+  //OPTIONAL
+  string mime_type = 6;
+
+  //OPTIONAL
+  string md5sum =  7;
 
   //REQUIRED
-  string created = 8; // timestamp
+  repeated string urls = 8;
 
   //OPTIONAL
-  string dataset_id = 9;
+  string description = 9;
+
+  //OPTIONAL TODO ARE THESE NAMES, IDS, URLS?
+  repeated string aliases = 10;
 
   //OPTIONAL
-  map<string, string> info = 10;
+  Provenance provenance = 11;
 
   //OPTIONAL
-  Provenance provenance = 12;
+  google.protobuf.Struct info = 12;
+
+  //OPTIONAL
+  // A Resource can optionally be associated with the following linked entities :
+  // relationship  example description
+  // aliquots         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/aliquot.yaml
+  // analytes         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/analyte.yaml
+  // archives         https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/archive.yaml
+  // individual (case,donor)   https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/bio_metadata.proto#L11
+  // centers          https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/center.yaml
+  // data_formats     https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/data_format.yaml
+  // dataset          https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/metadata.proto#L10
+  // derived_files    https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/file.yaml#L50
+  // platforms        https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/platform.yaml
+  // portions         https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/portion.yaml
+  // project          https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/project.yaml
+  // related_files    https://github.com/NCI-GDC/gdcdictionary/blob/develop/gdcdictionary/schemas/file.yaml#L50
+  // biosample        https://github.com/ga4gh/ga4gh-schemas/blob/master/src/main/proto/ga4gh/bio_metadata.proto#L65
+  // slides           https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/slide.yaml
+  // tags             https://github.com/NCI-GDC/gdcdictionary/blob/master/gdcdictionary/schemas/tag.yaml
+  // repository       http://docs.icgc.org/portal/api-endpoints/#!/repositories/list
+  repeated Link links = 13;
+
+  // OPTIONAL the id of the file as submitted
+  string submitted_id = 14;
+
+  //TODO DISCUSS OTHER GDC fields
+  // # state
+  // # file_state
+  // # error_type
+  // # submitter_id
+
 }
 
-
-message DataSet {
-  //REQUIRED
-  string id = 1;
-
-  //OPTIONAL
-  string description = 2;
-
-  //OPTIONAL
-  repeated string aliases = 3;
-
-  //OPTIONAL
-  map<string, string> info = 4;
-}
-
+///-------------------------------------------------------------------
+// A description of how the dataobject was created
+///-------------------------------------------------------------------
 
 message Provenance {
   //REQUIRED
-  repeated string sources = 1;
-
-  //REQUIRED
-  string operation = 2;
-}
-
-
-message ListRequest {
-  //OPTIONAL
-  string name_prefix = 1;
+  // A string defining an operation
+  string operation = 1;
 
   //OPTIONAL
-  repeated string has_keys = 2;
-
-  //OPTIONAL
-  string dataset_id = 3;
-
-}
-
-message DataObjectID {
-  string dataobject = 1;
-}
-
-message DataSetID {
-  string dataset = 1;
-}
-
-service DataService {
-
-  rpc AddDataObject(DataObject) returns (DataObjectID) {
-    option (google.api.http) = {
-      post: "/v1/data/object"
-      body: "*"
-    };
-  }
-
-  rpc GetDataObject(DataObjectID) returns (DataObject) {
-    option (google.api.http) = {
-      get: "/v1/data/object/{dataobject}"
-    };
-  }
-
-  rpc AddDataSet(DataSet) returns (DataSetID) {
-    option (google.api.http) = {
-      post: "/v1/data/set"
-      body: "*"
-    };
-  }
-
-  rpc GetDataSet(DataSetID) returns (DataSet) {
-    option (google.api.http) = {
-      get: "/v1/data/set/{dataset}"
-    };
-  }
-
-  rpc ListDataObjects(ListRequest) returns (stream DataObject) {
-    option (google.api.http) = {
-      post: "/v1/data/object/search"
-      body: "*"
-    };
-  }
-
-  rpc ListDataSets(ListRequest) returns (stream DataSet) {
-    option (google.api.http) = {
-      post: "/v1/data/set/search"
-      body: "*"
-    };
-  }
-
+  // An array of data_object_id inputs to a operation
+  // TODO append other ideas here e.g. data descriptor
+  repeated string sources = 2;
 }
